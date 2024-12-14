@@ -1,0 +1,910 @@
+import tkinter as tk                       # FOR GUI COMPONENTS
+from tkinter import messagebox
+from tkinter import ttk
+from tkinter import font                   # TKINTER COMPONENTS LIKE MESSAGEBOX, TTK (THEMED WIDGETS), AND FONT
+import json
+import os                                  # JSON MODULE FOR DATA HANDLING AND OS FOR FILE OPERATIONS
+from db import Database                    # DATABASE CLASS FROM AN EXTERNAL MODULE FOR DATABASE HANDLING
+
+class WattEaseMatters:
+    def __init__(self, master):
+        self.master = master                      # REFERENCE TO THE MAIN WINDOW
+        self.master.withdraw()                   
+        self.master.title("Watt Ease Matters")    
+        self.master.geometry("900x600")          
+        master.resizable(False, False)          
+        self.db = Database()                      # AN INSTANCE OF THE DATABASE CLASS FOR DATABASE INTERACTION
+        
+        self.budget = 0                           #  STORE THE USER'S ENERGY BUDGET
+        self.appliances = []                      #  STORE THE USER'S APPLIANCES
+        self.results = ""                         #  STORE CALCULATION RESULTS
+        
+        # DIRECTORY TO STORE DATA IF DOESN'T EXIST
+        if not os.path.exists("user_data"):       # CHECK IF THE DIRECTORY 'user_data' DOESN'T EXIST
+            os.makedirs("user_data")              # CREATE THE DIRECTORY 'user_data'
+
+        # LOGIN WINDOW
+        self.show_login_window()                  # CALL THE METHOD TO SHOW THE LOGIN WINDOW
+
+    def show_login_window(self):
+        self.login_window = tk.Toplevel(self.master, bg='lightgoldenrod1')       # NEW TOP-LEVEL WINDOW FOR LOGIN
+        self.login_window.title("Login")        
+        self.login_window.geometry("750x450")  
+        self.login_window.resizable(0, 0)      
+        
+        # WELCOME TEXT FOR LOGIN WINDOW
+        quote_text_font1 = font.Font(family="kristen itc", size=16, weight="bold")  
+        self.login_text = tk.Label(self.login_window, text="Welcome to Watt Ease Matters", fg='royalblue', font=quote_text_font1, bg='lightgoldenrod1')  
+        self.login_text.place(x=180, y=30) 
+
+        quote_text_font2 = font.Font(family="monotype corsiva", size=16, weight="bold")  
+        self.login_text = tk.Label(self.login_window, text="Where every spark of innovation illuminates the path to a sustainable future!", bg='lightgoldenrod1', fg='steelblue', font=quote_text_font2)  # CREATE A LABEL FOR THE SECOND WELCOME TEXT
+        self.login_text.place(x=35, y=70)  
+        
+        # USERNAME LABEL AND ENTRY
+        login_font = font.Font(family="Times New Roman", size=16, weight="bold") 
+
+        self.username_label = tk.Label(self.login_window, text="USERNAME:", font=login_font, bg='lightgoldenrod1', fg="dodgerblue4")  
+        self.username_label.place(x=105, y=140)  
+        self.username_entry = tk.Entry(self.login_window, font=login_font, bg='lemonchiffon', fg="dodgerblue4")  
+        self.username_entry.place(x=245, y=140) 
+
+        # PASSWORD LABEL AND ENTRY
+        self.password_label = tk.Label(self.login_window, text="PASSWORD:", font=login_font, bg='lightgoldenrod1', fg="dodgerblue4") 
+        self.password_label.place(x=105, y=215)  
+        self.password_entry = tk.Entry(self.login_window, show="*", font=login_font, bg='lemonchiffon', fg="dodgerblue4")  
+        self.password_entry.place(x=245, y=215)  
+
+        # LOGIN BUTTON
+        self.login_button = tk.Button(self.login_window, text="LOGIN", bg="steelblue", font=login_font, command=self.login, fg="white", borderwidth=7, width=17) 
+        self.login_button.place(x=245, y=300)  
+
+        # SIGN-UP LINK
+        self.signup_label = tk.Label(self.login_window, text="Don't have an account? Sign up!", font=login_font, fg="dodgerblue2", cursor="hand2", bg='lightgoldenrod1')  
+        self.signup_label.place(x=210, y=400) 
+        self.signup_label.bind("<Button-1>", self.show_signup_window)  # BIND A CLICK EVENT TO OPEN THE SIGN-UP WINDOW
+
+    def show_signup_window(self, event=None):
+        self.login_window.withdraw()                                   # HIDE THE LOGIN WINDOW WHEN SWITCHING TO THE SIGN-UP WINDOW
+
+        self.signup_window = tk.Toplevel(self.master, bg='lightgoldenrod1')  #  NEW TOP-LEVEL WINDOW FOR SIGN-UP
+        self.signup_window.title("Sign Up") 
+        self.signup_window.geometry("750x450")  
+        self.signup_window.resizable(0, 0)  
+
+        # WELCOME TEXT FOR SIGN-UP WINDOW
+        signup_quote_text_font1 = font.Font(family="kristen itc", size=16, weight="bold") 
+        self.signup_text = tk.Label(self.signup_window, text="Welcome to Watt Ease Matters", fg='royalblue', font=signup_quote_text_font1, bg='lightgoldenrod1')  
+        self.signup_text.place(x=180, y=30) 
+        
+        signup_quote_text_font2 = font.Font(family="monotype corsiva", size=16, weight="bold") 
+        self.signup_text = tk.Label(self.signup_window, text="Where every spark of innovation illuminates the path to a sustainable future!", bg='lightgoldenrod1', fg='steelblue', font=signup_quote_text_font2)  
+        self.signup_text.place(x=35, y=70)  
+        
+        signup_font = font.Font(family="Times New Roman", size=16, weight="bold")  
+
+        # USERNAME LABEL AND ENTRY FOR SIGN-UP
+        self.signup_username_label = tk.Label(self.signup_window, text="USERNAME:", font=signup_font, bg='lightgoldenrod1', fg="dodgerblue4")  
+        self.signup_username_label.place(x=105, y=140)  
+        self.signup_username_entry = tk.Entry(self.signup_window, font=signup_font, bg='lemonchiffon', fg="dodgerblue4") 
+        self.signup_username_entry.place(x=245, y=140) 
+
+        # PASSWORD LABEL AND ENTRY FOR SIGN-UP
+        self.signup_password_label = tk.Label(self.signup_window, text="PASSWORD:", font=signup_font, bg='lightgoldenrod1', fg="dodgerblue4")  
+        self.signup_password_label.place(x=105, y=215)  
+        self.signup_password_entry = tk.Entry(self.signup_window, show="*", font=signup_font, bg='lemonchiffon', fg="dodgerblue4")  
+        self.signup_password_entry.place(x=245, y=215) 
+
+        # SIGN-UP BUTTON
+        self.signup_button = tk.Button(self.signup_window, text="SIGN UP", bg="steelblue", font=signup_font, command=self.signup, fg="white", borderwidth=7, width=17)  
+        self.signup_button.place(x=245, y=300)  
+
+    def signup(self):
+        username = self.signup_username_entry.get().strip()
+        password = self.signup_password_entry.get().strip()
+
+        if not username or not password:
+            messagebox.showerror("Input Error", "Please enter both username and password.")
+            return
+
+        if self.db.get_user(username):
+            messagebox.showerror("Signup Error", "Username already exists.")
+            return
+
+        if self.db.create_user(username, password):
+            messagebox.showinfo("Success", "Sign up successful! You can now log in.")
+            self.signup_window.destroy()
+            self.show_login_window()
+        else:
+            messagebox.showerror("Error", "An error occurred during sign-up. Please try again.")
+
+    def save_user_data(self, username, password):
+        user_data = {                                          # A DICTIONARY WITH USER DATA
+            "username": username,                              
+            "password": password                               
+        }
+        file_path = f"user_data/{username}.json"               # CREATE A FILE PATH TO SAVE THE USER DATA
+        with open(file_path, "w") as file:                     
+            json.dump(user_data, file)                         
+
+    def load_user_data(username):
+        file_path = f"user_data/{username}.json"               # FILE PATH TO LOAD THE USER DATA
+        try:
+            with open(file_path, "r") as file:                 
+                user_data = json.load(file)                    
+            if 'password' not in user_data:                    
+                raise ValueError("Password field is missing")  
+            return user_data  
+        except (FileNotFoundError, ValueError) as e:           # VALUE ERROR EXCEPTIONS
+            print(f"Error loading user data: {e}")  
+            return None  
+
+    def login(self):
+        username = self.username_entry.get().strip()
+        password = self.password_entry.get().strip()
+
+        if not username or not password:
+            messagebox.showerror("Input Error", "Please enter both username and password.")
+            return
+
+        user_data = self.db.get_user(username)
+        print(user_data)  
+
+        if user_data is None:
+            messagebox.showerror("Login Error", "Username not found. Please sign up.")
+            return
+
+    # ACCESS THE PASSWORD USING THE INDEX
+        if user_data[2] != password:
+            messagebox.showerror("Login Error", "Incorrect password. Please try again.")
+            return
+
+        messagebox.showinfo("Login Success", f"Welcome, {username}!")
+        self.current_user = user_data[0]  
+        self.login_window.destroy()
+        self.initialize_main_application()
+
+    # Load appliances for the current user
+        self.appliances = self.db.get_appliances(self.current_user)                                               # CALL METHOD TO INITIALIZE MAIN APPLICATION AFTER LOGIN
+
+    def initialize_main_application(self):
+        # INITIALIZE THE MAIN APPLICATION WINDOW
+
+        self.master.deiconify()
+
+        # FONT DEFINITIONS
+        main_font = font.Font(family='Times New Roman', size=14, weight='bold') 
+        quote_text_font1 = font.Font(family="kristen itc", size=15, weight="bold")  
+        quote_text_font2 = font.Font(family="garamond", size=12, weight="bold") 
+        main_font_button = font.Font(family='Times New Roman', size=12, weight='bold')  
+
+        # WELCOME MESSAGE
+        self.welcome_label = tk.Label(self.master, text="Watt Ease Matters", bg='darkolivegreen1', fg='midnightblue', font=quote_text_font1)
+        self.welcome_label.pack(pady=20)
+        self.welcome_label = tk.Label(self.master, text="Use this intuitive tool to calculate appliance energy costs\n Helping you budget effectively and reduce waste\nStart saving today!", bg='darkolivegreen1', fg='royalblue', font=quote_text_font2)
+        self.welcome_label.place(x=250, y=50)
+
+        # INSTRUCTION MESSAGE
+        note_font = font.Font(family='yu gothic ui', size=11, weight='bold')  
+        self.instruction_label = tk.Label(self.master, text="Note: Click 'ADD APPLIANCE' before 'CALCULATE COSTS'.\n To find the cost of your kWh, check your electricity bill or contact your utility provider.", bg='darkolivegreen1', fg="gray17", font=note_font)
+        self.instruction_label.place(x=170, y=480)
+
+        # BUDGET INPUT 
+        self.budget_label = tk.Label(self.master, text="Enter your target budget (in pesos):", bg='darkolivegreen1', font=main_font, fg="gray17")
+        self.budget_label.place(x=50, y=120)
+        self.budget_entry = tk.Entry(self.master, bg='olivedrab2', font=main_font, fg="gray17")
+        self.budget_entry.place(x=350, y=120)
+
+        # APPLIANCE INPUT 
+        self.appliance_label = tk.Label(self.master, text="Appliance Name:", bg='darkolivegreen1', fg="gray17", font=main_font)
+        self.appliance_label.place(x=199, y=170)
+        self.appliance_entry = tk.Entry(self.master, bg='olivedrab2', fg="gray17", font=main_font)
+        self.appliance_entry.place(x=350, y=170)
+
+        # POWER CONSUMPTION INPUT 
+        self.power_label = tk.Label(self.master, text="Power Consumption (in watts):", bg='darkolivegreen1', fg="gray17", font=main_font)
+        self.power_label.place(x=86, y=220)
+        self.power_entry = tk.Entry(self.master, bg='olivedrab2', fg="gray17", font=main_font)
+        self.power_entry.place(x=350, y=220)
+
+        # USAGE TYPE RADIO BUTTONS
+        self.use_option_label = tk.Label(self.master, text="Select usage type:", bg='darkolivegreen1', fg="gray17", font=main_font)
+        self.use_option_label.place(x=193, y=260)
+        self.use_option = tk.StringVar(value="daily")
+
+        self.daily_radio = tk.Radiobutton(self.master, text="Hours of Use per Day", variable=self.use_option, value="daily", bg='darkolivegreen1', fg="gray17", font=main_font)
+        self.daily_radio.place(x=350, y=280)
+
+        self.monthly_radio = tk.Radiobutton(self.master, text="Hours of Use per Month", variable=self.use_option, value="monthly", bg='darkolivegreen1', fg="gray17", font=main_font)
+        self.monthly_radio.place(x=350, y=315)
+
+        # HOURS OF USE INPUT 
+        self.hours_label = tk.Label(self.master, text="Hours of Use:", bg='darkolivegreen1', fg="gray17", font=main_font)
+        self.hours_label.place(x=227, y=385)
+        self.hours_entry = tk.Entry(self.master, bg='olivedrab2', font=main_font, fg="gray17")
+        self.hours_entry.place(x=350, y=385)
+
+        # COST PER kWh INPUT 
+        self.cost_label = tk.Label(self.master, text="Cost per kWh (in pesos):", bg='darkolivegreen1', fg="gray17", font=main_font)
+        self.cost_label.place(x=136, y=435)
+        self.cost_entry = tk.Entry(self.master, bg='olivedrab2', font=main_font, fg="gray17")
+        self.cost_entry.place(x=350, y=435)
+
+        
+        # ADD APPLIANCE BUTTON
+        self.add_button = tk.Button(self.master, text="ADD APPLIANCE", bg='turquoise1', fg="gray17", command=self.add_appliance, font=main_font_button, borderwidth=5)
+        self.add_button.place(x=606, y=115)
+
+        # CALCULATE COSTS BUTTON
+        self.calculate_button = tk.Button(self.master, text="CALCULATE COSTS", bg='seagreen1', fg="gray17", command=self.calculate_costs, font=main_font_button, borderwidth=5)
+        self.calculate_button.place(x=596, y=165)
+
+        # SHOW RESULTS BUTTON
+        self.show_button = tk.Button(self.master, text="SHOW RESULTS", bg='gold', fg="gray17", command=self.show_results, font=main_font_button, borderwidth=5)
+        self.show_button.place(x=610, y=215)
+
+        # SAVE DATA BUTTON
+        self.save_button = tk.Button(self.master, text="SAVE DATA", bg='lawngreen', fg="gray17", command=self.save_data, font=main_font_button, borderwidth=5)
+        self.save_button.place(x=627, y=265)
+
+        # LOAD DATA BUTTON
+        self.load_button = tk.Button(self.master, text="LOAD DATA", bg='navy', fg="azure", command=self.load_data, font=main_font_button, borderwidth=5)
+        self.load_button.place(x=626, y=315)
+
+        # DELETE LAST APPLIANCE BUTTON
+        self.delete_button = tk.Button(self.master, text="DELETE LAST APPLIANCE", bg='red3', fg="azure", command=self.delete_appliance, font=main_font_button, borderwidth=5)
+        self.delete_button.place(x=581, y=365)
+
+        # DELETE SAVED DATA BUTTON
+        self.delete_data_button = tk.Button(self.master, text="DELETE SAVED DATA", bg='red2', fg="azure", command=self.delete_saved_data, font=main_font_button, borderwidth=5)
+        self.delete_data_button.place(x=595, y=415)
+
+        # DEVICE POWER RATINGS BUTTON
+        show_button = tk.Button(self.master, text="DEVICE POWER RATINGS", bg='skyblue1', fg="gray17", command=show_appliances, font=main_font_button, borderwidth=5)
+        show_button.place(x=40, y=530)
+
+        # EXIT BUTTON
+        self.exit_button = tk.Button(self.master, text="EXIT", command=self.master.quit, bg='khaki1', fg="gray17", font=main_font_button, borderwidth=5)
+        self.exit_button.place(x=800, y=530)
+
+    def add_appliance(self):
+    # GET THE APPLIANCE DATA FROM THE ENTRY FIELDS
+        name = self.appliance_entry.get()
+        try:
+            power_consumption = float(self.power_entry.get())
+            hours_of_use = float(self.hours_entry.get())
+            cost_per_kwh = float(self.cost_entry.get())
+        except ValueError:
+            messagebox.showerror("Input Error", "Please enter valid numeric values.")
+            return
+
+    
+        if self.use_option.get() == "daily":
+            hours_of_use_per_day = hours_of_use
+            hours_of_use_per_month = 0  # SET MONTHLY USAGE TO 0 IF DAILY USAGE IS SELECTED
+        else:  
+            hours_of_use_per_day = 0  # SET DAILY USAGE TO 0 IF MONTHLY USAGE IS SELECTED
+            hours_of_use_per_month = hours_of_use
+
+   
+        appliance = {
+        'name': name,
+        'power_consumption': power_consumption,
+        'hours_of_use_per_day': hours_of_use_per_day,
+        'hours_of_use_per_month': hours_of_use_per_month,
+        'cost_per_kwh': cost_per_kwh
+    }
+    
+        if self.current_user:
+            self.appliances.append(appliance)
+            self.db.add_appliance(self.current_user, name, power_consumption, hours_of_use_per_day, hours_of_use_per_month, cost_per_kwh)
+            print(f"Appliance '{name}' added to the database.")  
+        
+            messagebox.showinfo("Success", f"Appliance '{name}' added.")
+         
+            self.clear_appliance_inputs()
+            self.update_appliance_list()  
+
+
+    def clear_appliance_inputs(self):
+        self.appliance_entry.delete(0, tk.END)
+        self.power_entry.delete(0, tk.END)
+        self.hours_entry.delete(0, tk.END)
+        self.cost_entry.delete(0, tk.END)
+
+
+    def delete_appliance(self):
+        if len(self.appliances) < 1:
+            messagebox.showinfo("Insufficient Appliances", "There are not enough appliances to delete.")
+            return
+
+        confirm = messagebox.askyesno("Confirm Delete", "Are you sure you want to delete the previous appliance?")
+        if confirm:
+            # REMOVE THE LAST APPLIANCE 
+            self.appliances.pop(-1)
+            messagebox.showinfo("Success", "The previous appliance has been deleted.")
+        else:
+            messagebox.showinfo("Cancelled", "No appliance was deleted.")
+        
+        # UPDATE APPLIANCE LIST OR UI
+        self.update_appliance_list()
+
+    def update_appliance_list(self):
+        # UPDATE THE LIST IN THE UI
+        print(f"Current appliances: {self.appliances}")
+
+    def calculate_costs(self):
+        if hasattr(self, 'results_window') and self.results_window.winfo_exists():
+           treeview = self.results_window.winfo_children()[0]  
+        else:
+            self.show_results_in_column_format()  
+            treeview = self.results_window.winfo_children()[0]  
+
+        for item in treeview.get_children():
+            treeview.delete(item)
+
+        total_monthly_cost = 0 
+
+    # ITERATE THROUGH APPLIANCES AND CALCULATE COSTS
+        for idx, appliance in enumerate(self.appliances):
+            if isinstance(appliance, dict):  
+            # CALCULATE ENERGY CONSUMED PER DAY, DAILY COST, AND MONTHLY COST
+                energy_consumed_per_day_kwh = (appliance['power_consumption'] * appliance['hours_of_use_per_day']) / 1000
+                daily_cost = energy_consumed_per_day_kwh * appliance['cost_per_kwh']
+                monthly_cost = daily_cost * 30  
+
+                total_monthly_cost += monthly_cost  
+
+            # DISPLAYING IN TREEVIEW
+                tag = "even" if idx % 2 == 0 else "odd"
+                hours_of_use_display = appliance['hours_of_use_per_day'] if appliance['hours_of_use_per_day'] > 0 else appliance.get('hours_of_use_per_month', 0)
+
+                treeview.insert("", tk.END, values=(
+                    appliance['name'],
+                    appliance['power_consumption'],
+                    hours_of_use_display,
+                    appliance['cost_per_kwh'],
+                    f"{daily_cost:.2f}",
+                   f"{monthly_cost:.2f}"
+                ), tags=(tag,))
+            else:
+                print(f"Skipping non-dictionary appliance entry: {appliance}")
+
+    # REMAINING BUDGET
+        remaining_budget = self.budget - total_monthly_cost
+        if total_monthly_cost > self.budget:
+            total_tag = "total_over_budget"
+            total_bg_color = "indian red"  
+        else:
+            total_tag = "total_under_budget"
+            total_bg_color = "chartreuse2"  
+
+        treeview.insert("", tk.END, values=("Total", "", "", "", f"{total_monthly_cost:.2f}"), tags=(total_tag,))
+        treeview.insert("", tk.END, values=("Remaining Budget", "", "", "", f"{remaining_budget:.2f}"), tags=(total_tag,))
+
+        treeview.tag_configure("total_over_budget", background=total_bg_color, font=("yu gothic ui", 10, "bold"))
+        treeview.tag_configure("total_under_budget", background=total_bg_color, font=("yu gothic ui", 10, "bold"))
+
+        treeview.tag_configure("even", background="gray70", font=("yu gothic ui", 10, "bold"))
+        treeview.tag_configure("odd", background="azure", font=("yu gothic ui", 10, "bold"))
+
+        if total_monthly_cost > self.budget:
+            messagebox.showwarning("Budget Alert", "Your total monthly cost exceeds your budget!")
+            self.show_energy_saving_tips()  
+        else:
+            messagebox.showinfo("Budget Status", "Your total monthly cost is within your budget.")
+
+
+
+
+    def show_energy_saving_tips(self):
+        # SHOWS ENERGY SAVING TIPS IN A NEW WINDOW
+        tips = (
+            "                                  \t\t\t\t      Welcome to the Watt Ease Matters Energy-Saving Tips!\n"
+            "                     \t\t       In today's world, every watt counts. By adopting small, practical changes in your daily routine, \n"
+            "                   \t     you can significantly reduce your energy consumption, lower your utility bills, and contribute to a more sustainable\n"
+            "                         future. Start using these energy-efficient tips today and feel the difference in both your home and the environment!\n\n"
+            
+            "  >> Use Natural Ventilation:\n"
+            '\t Take advantage of the natural breeze by opening windows and doors to ventilate your home.\n'
+            '\t This can reduce reliance on air conditioning, especially during cooler months.\n\n'
+            "  >> Install Ceiling Fans:\n"
+            "\t Use ceiling fans to circulate air instead of relying solely on air conditioning.\n" 
+            "\t Fans consume less energy and can make a room feel cooler when used properly.\n\n"
+            "  >> Limit Air Conditioning Use:\n"
+            "\t Set your air conditioner to a higher temperature (around 25-26°C) and use timers to limit usage.\n"
+            "\t Regularly clean or replace air filters to maintain efficiency.\n\n"
+            "  >> Switch to LED Lighting:\n"
+            "\t Replace incandescent bulbs with LED or CFL bulbs, which use significantly less energy and have a longer lifespan.\n"
+            "\t This is particularly important in a country with high humidity, where lights can be left on for extended periods.\n\n"
+            "  >> Unplug Unused Electronics:\n"
+            "\t Many electronics consume energy even when turned off (known as phantom load).\n"
+            "\t Unplug devices such as chargers, TVs, and computers when not in use, or use a smart power strip to easily cut off power.\n\n"
+            "  >> Regular Maintenance of Electrical Systems:\n"
+            "\t Ensure that electrical systems, including wiring and appliances, are well-maintained.\n" 
+            "\t Regular checks can prevent energy losses due to inefficiencies or faults.\n\n"
+            "  >> Plant Trees and Vegetation:\n"
+            "\t Planting trees or shrubs around your home can provide shade,\n"
+            "\t reducing the heat entering your home and lowering cooling costs.\n\n"
+            "  >> Educate Household Members:\n"
+            "\t Encourage family members to be mindful of energy use, such as turning off lights when leaving a room, unplugging chargers,\n"
+            "\t and using appliances efficiently.\n\n"
+            "\t > Bonus Tip:\n"
+            "  >>Consider Renewable Energy Sources:\n"
+            "\t Explore options for solar panels, especially with government incentives and programs promoting renewable energy.\n"
+            "\t This can significantly reduce your long-term energy costs.\n\n"
+        )
+
+        # OPEN TIPS WINDOW
+        tips_window = tk.Toplevel(self.master, bg='dark goldenrod1')
+        tips_window.title("Energy Saving Tips")
+        tips_window.geometry("1000x600")
+        tips_window.resizable(0,0)
+
+        # FONT STYLING FOR THE TIPS TEXT
+        main_font = font.Font(family="yu gothic ui", size=11, weight="bold")
+
+        # TEXT WIDGET TO DISPLAY THE TIPS
+        tips_text = tk.Text(tips_window, wrap=tk.WORD, font=main_font,fg='gold', bg='gray9')
+        tips_text.insert(tk.END, tips)
+        tips_text.config(state=tk.DISABLED) 
+        tips_text.pack(expand=True, fill=tk.BOTH)
+        
+        # FONT STYLING FOR CLOSE BUTTON
+        close1_font = font.Font(family="Times New Roman", size=12, weight="bold")
+
+        # CLOSE BUTTON TO CLOSE TIPS WINDOW
+        close_button = tk.Button(tips_window, text="CLOSE", command=tips_window.destroy, font=close1_font)
+        close_button.pack(pady=10)
+
+    def show_results(self):
+        self.show_results_in_column_format()  
+
+        total_monthly_cost = 0
+        self.results = ""  
+
+        for appliance in self.appliances:
+         if isinstance(appliance, dict):  
+            self.results += (f"Appliance: {appliance['name']}\n"
+                             f"Energy consumed per day: N/A\n"
+                             f"Cost per kWh: {appliance['cost_per_kwh']} pesos\n\n")
+        else:
+            print(f"Skipping non-dictionary appliance entry: {appliance}")
+    
+        self.results += f"Total monthly cost of all appliances: {total_monthly_cost:.2f} pesos\n"
+
+        remaining_budget = self.budget - total_monthly_cost
+        self.results += f"Remaining Budget: {remaining_budget:.2f} pesos\n"
+
+
+ 
+
+
+    def show_appliance_results(self):
+        self.results_tree.delete(*self.results_tree.get_children())
+    
+        for appliance in self.appliances:
+            self.results_tree.insert("", "end", values=(
+            appliance['name'],
+            appliance['power_consumption'],
+            appliance['hours_of_use_per_day'],
+            appliance['hours_of_use_per_month'],
+            "",  # PLACEHOLDER FOR DAILY COST
+            ""   # PLACEHOLDER FOR MONTHLY COST
+        ))
+
+    def show_results_in_column_format(self):
+    # OPEN A NEW WINDOW TO DISPLAY RESULTS IN A TABLE FORMAT
+        self.results_window = tk.Toplevel(self.master)
+        self.results_window.title("Appliance Results")
+        self.results_window.geometry("1100x500")
+        self.results_window.config(bg="gold")
+       
+        print(f"Appliances: {self.appliances}") 
+        print(f"Appliances before processing: {self.appliances}")  
+    
+        columns = ("Appliance", "Power Consumption (W)", "Hours of Use", "Cost per kWh (pesos)", 
+               "Daily Cost (pesos)", "Monthly Cost (pesos)")
+        treeview = ttk.Treeview(self.results_window, columns=columns, show="headings")
+    
+        style1 = ttk.Style()
+        style1.configure("Results.Treeview.Heading", font=("yu gothic ui", 10, "bold"), background="red", foreground="black")
+        treeview.configure(style="Results.Treeview")
+
+    # DEFINE THE HEADINGS FOR EACH COLUMN
+        for col in columns:
+            treeview.heading(col, text=col)
+            treeview.column(col, width=120, anchor="center")
+
+        treeview.tag_configure("even", background="gray70", font=("yu gothic ui", 10, "bold"))
+        treeview.tag_configure("odd", background="azure", font=("yu gothic ui", 10, "bold"))
+    
+        for idx, appliance in enumerate(self.appliances):
+            if isinstance(appliance, dict):  
+                tag = "even" if idx % 2 == 0 else "odd"
+                treeview.insert("", tk.END, values=(
+                    appliance['name'],
+                    appliance['power_consumption'],
+                    appliance['hours_of_use_per_day'],
+                    appliance['cost_per_kwh'],
+                    "",  # EMPTY DAILY COST
+                    ""   # EMPTY MONTHLY COST
+                ), tags=(tag,))  
+            else:
+                print(f"Skipping non-dictionary appliance entry: {appliance}")  
+    
+        scrollbar = ttk.Scrollbar(self.results_window, orient="vertical", command=treeview.yview)
+        treeview.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        treeview.pack(expand=True, fill=tk.BOTH)
+
+        close2_font = font.Font(family="Times New Roman", size=16, weight="bold")
+        close_button = tk.Button(self.results_window, text="CLOSE", command=self.results_window.destroy, 
+                             font=close2_font, bg='red4', fg='azure')
+        close_button.pack(pady=10)
+
+        self.treeview = treeview
+
+     # SAVE USER DATA TO A JSON FILE
+    def save_data(self):
+        if not self.current_user:
+            messagebox.showerror("Error", "Please log in to save data.")
+            return
+
+        data = {
+            'budget': self.budget,
+            'appliances': self.appliances
+        }
+
+        user_data_path = f"user_data/{self.current_user}.json"
+        with open(user_data_path, 'w') as file:
+            json.dump(data, file)
+        
+        messagebox.showinfo("Data Saved", "Your data has been saved successfully.")
+    def load_appliances(self):
+       self.appliances = self.db.get_appliances(self.current_user)
+
+       print(f"Appliances loaded: {self.appliances}")
+       for appliance in self.appliances:
+           print(type(appliance), appliance)  
+
+    # LOAD USER DATA FROM A JSON FILE
+    def load_data(self):
+        if not self.current_user:
+            messagebox.showerror("Error", "Please log in to load data.")
+            return
+
+        slot = self.choose_slot("Load Data")
+        if slot is None:
+            return  # USER CANCELED THE ACTION
+
+        user_data_directory = "user_data"
+        user_data_path = f"{user_data_directory}/{self.current_user}_slot{slot}.json"
+
+        if not os.path.exists(user_data_path):
+            messagebox.showwarning("Load Error", f"No saved data found for this slot ({slot}).")
+            return
+
+        with open(user_data_path, 'r') as file:
+            data = json.load(file)
+            self.budget = data.get('budget', 0)
+            self.appliances = data.get('appliances', [])
+
+        self.budget_entry.delete(0, tk.END)
+        self.budget_entry.insert(0, str(self.budget))
+        messagebox.showinfo("Data Loaded", f"Your data has been loaded from slot {slot}.")
+
+    # SAVE USER DATA TO A SELECTED SLOT 
+    def save_data(self):
+        if not self.current_user:
+            messagebox.showerror("Error", "Please log in to save data.")
+            return
+
+        slot = self.choose_slot("Save Data")
+        if slot is None:
+            return  # USER CANCELED THE ACTION
+
+        data = {
+            'budget': self.budget,
+            'appliances': self.appliances
+        }
+
+        user_data_directory = "user_data"
+        if not os.path.exists(user_data_directory):
+            os.makedirs(user_data_directory)
+
+        user_data_path = f"{user_data_directory}/{self.current_user}_slot{slot}.json"
+        with open(user_data_path, 'w') as file:
+            json.dump(data, file)
+
+        messagebox.showinfo("Data Saved", f"Your data has been saved to slot {slot}.")
+
+    # CLOSE RESULTS WINDOW IF OPEN
+    def clear_results_window(self):
+        if hasattr(self, 'results_window') and self.results_window.winfo_exists():
+            self.results_window.destroy()
+            self.results_window = None
+
+    # DELETE SAVED DATA FROM A SLOT
+    def delete_saved_data(self):
+        if not self.current_user:
+            messagebox.showerror("Error", "Please log in to delete saved data.")
+            return
+
+        slot = self.choose_slot("Delete Data")
+        if slot is None:
+            return  # USER CANCELED THE ACTION
+
+        user_data_path = f"user_data/{self.current_user}_slot{slot}.json"
+        if os.path.exists(user_data_path):
+            os.remove(user_data_path)
+            messagebox.showinfo("Data Deleted", f"Your saved data from slot {slot} has been deleted.")
+        else:
+            messagebox.showwarning("No Data Found", "No saved data found for this slot.")
+
+    # CLOSE RESULTS WINDOW IF OPEN
+    def clear_results_window(self):
+        if hasattr(self, 'results_window') and self.results_window.winfo_exists():
+            self.results_window.destroy()
+
+    # DISABLE BUTTONS THAT DEPEND ON USER DATA AFTER DELETION
+    def update_ui_after_deletion(self):
+        self.calculate_button.config(state=tk.DISABLED)
+        self.show_button.config(state=tk.DISABLED)
+        self.save_button.config(state=tk.DISABLED)
+        self.load_button.config(state=tk.DISABLED)
+        self.delete_data_button.config(state=tk.DISABLED)
+
+    # PROMPTS USER TO CHOOSE A SLOT FOR SAVING, LOADING, OR DELETING DATA
+    # PROMPTS USER TO CHOOSE A SLOT FOR SAVING, LOADING, OR DELETING DATA
+    def choose_slot(self, action):
+        slot_window = tk.Toplevel(self.master, bg='tomato')
+        slot_window.title(action)
+        slot_window.geometry("400x280")
+        slot_window.resizable(0, 0)
+
+        slot_font = font.Font(family='Times New Roman', size=12, weight='bold')
+
+        slot_var = tk.StringVar(value="1")  # DEFAULT TO SLOT 1
+
+        tk.Label(slot_window, text=f"Choose a slot to {action.lower()}:", font=slot_font, bg='tomato').grid(row=0, column=0, padx=45, pady=20)
+
+        # RADIO BUTTONS IN A GRID LAYOUT
+        for i in range(1, 6):
+            tk.Radiobutton(slot_window, text=f"SLOT{i}", variable=slot_var, value=str(i), font=slot_font, bg='tomato').grid(row=i, column=0, sticky=tk.W, padx=160)
+
+    # HANDLE SLOT SELECTION CONFIRMATION
+        def on_confirm():
+            selected_slot = slot_var.get()
+            slot_window.destroy()
+            self.selected_slot = selected_slot  # STORE THE SELECTED SLOT IN THE INSTANCE VARIABLE
+
+        confirm_button = tk.Button(slot_window, text="Confirm", command=on_confirm, font=slot_font, bg='green4', fg='azure', borderwidth=5)
+        confirm_button.place(x=40, y=220)
+
+
+        confirm_button = tk.Button(slot_window, text="Confirm", command=on_confirm, font=slot_font, bg='green4', fg='azure', borderwidth= 5 )
+        confirm_button.place(x=40, y=220)
+
+    # HANDLE CANCEL SELECTION
+        def on_cancel():
+            slot_window.destroy()  # CLOSE THE WINDOW WITHOUT SELECTING A SLOT
+            self.selected_slot = None
+
+        cancel_button = tk.Button(slot_window, text="Cancel", command=on_cancel, font=slot_font, bg='red3', fg='azure', borderwidth=5)
+        cancel_button.place(x=300, y=220)
+        self.master.wait_window(slot_window)
+
+        # RETURN THE SELECTED SLOT OR NONE IF CANCELED
+        return getattr(self, 'selected_slot', None) 
+
+# DATA FOR APPLIANCES
+appliances = [
+    ("100W light bulb (Incandescent)", "100W", "100W", "0W"),
+    ("22 Inch LED TV", "17W", "17W", "0.5W"),
+    ("25\" colour TV", "150W", "150W", "N/A"),
+    ("3\" belt sander", "1000W", "1000W", "N/A"),
+    ("32 Inch LED TV", "20W", "60W", "1W"),
+    ("42 Inch LED TV", "58W", "60W", "0.3W"),
+    ("42 Inch Plasma TV", "450W", "600W", "N/A"),
+    ("46 Inch LED TV", "60W", "70W", "1W"),
+    ("49 Inch LED TV", "85W", "85W", "1W"),
+    ("55 Inch LED TV", "116W", "116W", "0.5W"),
+    ("60W light bulb (Incandescent)", "60W", "60W", "0W"),
+    ("65 Inch LED TV", "120W", "130W", "1W"),
+    ("82 Inch LED TV", "228W", "295W", "0.5W"),
+    ("9\" disc sander", "1200W", "1200W", "N/A"),
+    ("Air Cooler", "65W", "80W", "N/A"),
+    ("Air Fryer", "1500W", "1500W", "N/A"),
+    ("Air Purifier", "25W", "30W", "N/A"),
+    ("Amazon Echo", "3W", "3W", "2W"),
+    ("Amazon Echo Dot", "2W", "3W", "N/A"),
+    ("Amazon Echo Show", "2W", "4W", "0.1W"),
+    ("American-Style Fridge Freezer", "40W", "80W", "N/A"),
+    ("Apple TV", "3W", "6W", "0.3W"),
+    ("Aquarium Pump", "20W", "50W", "N/A"),
+    ("AV Receiver", "450W", "450W", "N/A"),
+    ("Bathroom Towel Heater", "60W", "150W", "N/A"),
+    ("Ceiling Fan", "60W", "70W", "0W"),
+    ("Chromebook", "45W", "45W", "N/A"),
+    ("Chromecast", "2W", "2W", "N/A"),
+    ("Clock radio", "1W", "2W", "N/A"),
+    ("Clothes Dryer", "1000W", "4000W", "N/A"),
+    ("Coffee Maker", "800W", "1400W", "N/A"),
+    ("Computer Monitor", "25W", "30W", "N/A"),
+    ("Cooker Hood", "20W", "30W", "0W"),
+    ("Corded Drill", "600W", "850W", "N/A"),
+    ("Corded Electric Handheld Leaf Blower", "2500W", "2500W", "N/A"),
+    ("Cordless Drill Charger", "70W", "150W", "N/A"),
+    ("Cpap machine", "30W", "60W", "N/A"),
+    ("Curling Iron", "25W", "35W", "0W"),
+    ("DAB Mains Radio", "5W", "9W", "N/A"),
+    ("Deep Freezer", "19W", "19W", "N/A"),
+    ("Dehumidifier", "240W", "240W", "N/A"),
+    ("Desk Lamp", "40W", "65W", "N/A"),
+    ("Desktop Computer", "100W", "450W", "N/A"),
+    ("Dishwasher", "1200W", "1500W", "N/A"),
+    ("Domestic Water Pump", "200W", "300W", "0W"),
+    ("DVD Player", "26W", "60W", "N/A"),
+    ("Electric Blanket", "200W", "200W", "N/A"),
+    ("Electric Boiler", "4000W", "14000W", "N/A"),
+    ("Electric Doorbell Transformer", "2W", "2W", "N/A"),
+    ("Electric Heater Fan", "2000W", "3000W", "N/A"),
+    ("Electric Kettle", "1200W", "3000W", "0W"),
+    ("Electric Mower", "1500W", "1500W", "N/A"),
+    ("Electric Pressure Cooker", "1000W", "1000W", "N/A"),
+    ("Electric Shaver", "15W", "20W", "N/A"),
+    ("Electric stove", "2000W", "2000W", "N/A"),
+    ("Electric Tankless Water Heater", "6600W", "8800W", "N/A"),
+    ("Electric Thermal Radiator", "500W", "500W", "N/A"),
+    ("Electric Toothbrush Charger", "6W", "6W", "N/A"),
+    ("Espresso Coffee Machine", "1300W", "1500W", "N/A"),
+    ("EV Car Charger", "2000W", "7000W", "N/A"),
+    ("EV Home Charger", "1600W", "3400W", "N/A"),
+    ("Evaporative Air Conditioner", "2600W", "2600W", "N/A"),
+    ("External Hard Drive", "1W", "3W", "N/A"),
+    ("Extractor Fan", "12W", "12W", "N/A"),
+    ("Fluorescent Lamp", "28W", "45W", "N/A"),
+    ("Food Blender", "300W", "400W", "N/A"),
+    ("Food Dehydrator", "800W", "800W", "N/A"),
+    ("Freezer", "30W", "50W", "N/A"),
+    ("Fridge", "100W", "220W", "N/A"),
+    ("Fridge / Freezer", "150W", "400W", "N/A"),
+    ("Fryer", "1000W", "1000W", "N/A"),
+    ("Game Console", "120W", "200W", "N/A"),
+    ("Gaming PC", "300W", "600W", "1W"),
+    ("Garage Door Opener", "300W", "400W", "N/A"),
+    ("Google Home Mini", "15W", "15W", "2W"),
+    ("Guitar Amplifier", "20W", "30W", "N/A"),
+    ("Hair Blow Dryer", "1800W", "2500W", "N/A"),
+    ("Hand Wash Oversink Water Heater", "3000W", "3000W", "N/A"),
+    ("Heated Bathroom Mirror", "50W", "100W", "N/A"),
+    ("Heated Hair Rollers", "400W", "400W", "N/A"),
+    ("Home Air Conditioner", "1000W", "4000W", "N/A"),
+    ("Home Internet Router", "5W", "15W", "N/A"),
+    ("Home Phone", "3W", "5W", "2W"),
+    ("Home Sound System", "95W", "95W", "1W"),
+    ("Hot Water Dispenser", "1200W", "1300W", "N/A"),
+    ("Hot Water Immersion Heater", "3000W", "3000W", "N/A"),
+    ("Humidifier", "35W", "40W", "N/A"),
+    ("iMac", "60W", "240W", "1W"),
+    ("Induction Hob (per hob)", "1400W", "1800W", "N/A"),
+    ("Inkjet Printer", "20W", "30W", "N/A"),
+    ("Inverter Air Conditioner", "1300W", "1800W", "N/A"),
+    ("Iron", "1000W", "1000W", "N/A"),
+    ("Juicer", "300W", "1000W", "N/A"),
+    ("Kettle", "1500W", "3000W", "0W"),
+    ("Laptop", "30W", "150W", "N/A"),
+    ("LED Desk Lamp", "5W", "10W", "N/A"),
+    ("LED Light Bulb", "10W", "15W", "0W"),
+    ("Microwave Oven", "600W", "1200W", "N/A"),
+    ("Mixer", "200W", "600W", "N/A"),
+    ("Mobile Phone Charger", "5W", "10W", "N/A"),
+    ("Multi-Cooker", "1000W", "1200W", "N/A"),
+    ("Network Switch", "10W", "20W", "N/A"),
+    ("Oven", "2000W", "3000W", "N/A"),
+    ("Piano Keyboard", "15W", "25W", "N/A"),
+    ("PlayStation 4", "150W", "300W", "N/A"),
+    ("Refrigerator", "100W", "200W", "N/A"),
+    ("Rice Cooker", "500W", "1000W", "N/A"),
+    ("Router", "10W", "20W", "N/A"),
+    ("Satellite Receiver", "20W", "30W", "N/A"),
+    ("Sewing Machine", "70W", "100W", "N/A"),
+    ("Smart Speaker", "10W", "15W", "N/A"),
+    ("Smart TV", "50W", "400W", "N/A"),
+    ("Soundbar", "30W", "100W", "N/A"),
+    ("Space Heater", "1500W", "1500W", "N/A"),
+    ("Stand Mixer", "300W", "500W", "N/A"),
+    ("Television", "60W", "400W", "N/A"),
+    ("Toaster", "800W", "1500W", "N/A"),
+    ("Toaster Oven", "1200W", "1800W", "N/A"),
+    ("Tower Fan", "50W", "100W", "0W"),
+    ("TV Box", "5W", "10W", "N/A"),
+    ("Vacuum Cleaner", "500W", "2000W", "N/A"),
+    ("Washing Machine", "500W", "2000W", "N/A"),
+    ("Water Cooler", "50W", "100W", "N/A"),
+    ("Water Heater", "3000W", "6000W", "N/A"),
+    ("Wi-Fi Extender", "5W", "10W", "N/A"),
+    ("Wireless Charger", "5W", "15W", "N/A"),
+    ("WiFi Router", "4W", "10W", "4W"),
+    ("Window Air Conditioner", "500W", "1500W", "N/A"),
+    ("Wine Cooler (18 bottles)", "83W", "83W", "0W"),
+    ("Xbox One", "50W", "110W", "14W")
+]
+
+def show_appliances():
+    show_appliances_window = tk.Toplevel()
+    show_appliances_window.title("Appliances List")
+    show_appliances_window.config(bg="orange")
+    show_appliances_window.resizable(0,1)
+
+    font_style = ("Times New Roman", 12)  
+
+    # SEARCH BAR 
+    search_entry = tk.Entry(show_appliances_window, font=font_style, bg="gold") 
+    search_entry.pack(pady=5)
+
+    # FUNCTION TO SEARCH THROUGH APPLIANCES
+    def search_appliances():
+        search_term = search_entry.get().lower()
+        # CLEAR CURRENT TREEVIEW ITEMS
+        for item in tree.get_children():
+            tree.delete(item)
+
+        # INSERT FILTERED APPLIANCES INTO TREEVIEW
+        for appliance in appliances:
+            if search_term in appliance[0].lower():  # SEARCH BY APPLIANCE NAME
+                tree.insert("", tk.END, values=appliance)
+
+    # SEARCH BUTTON
+    search_button = tk.Button(show_appliances_window, text="SEARCH", command=search_appliances, font=font_style, bg='yellow',borderwidth= 5, fg='gray17') 
+    search_button.pack(pady=5)
+
+    # TREEVIEW SETUP FOR APPLIANCES
+    tree = ttk.Treeview(show_appliances_window, columns=("Appliance", "Minimum", "Maximum", "Standby"), show="headings")
+    tree.heading("Appliance", text="Appliance")
+    tree.heading("Minimum", text="Minimum Power")
+    tree.heading("Maximum", text="Maximum Power")
+    tree.heading("Standby", text="Standby Power")
+
+    # STYLING THE TREEVIEW
+    style = ttk.Style()
+    style.configure("Appliances.Treeview", font=font_style, background="orange", fieldbackground="orange") 
+    style.configure("Appliances.Treeview.Heading", font=font_style, background="lightgray", foreground="black") 
+    tree.configure(style="Appliances.Treeview")
+    
+    # FUNCTION TO INSERT FULL LIST OF APPLIANCES
+    def insert_full_list():
+        for appliance in appliances:
+            tree.insert("", tk.END, values=appliance)
+
+    insert_full_list() 
+
+    tree.pack(expand=True, fill=tk.BOTH)
+
+    # FUNCTION TO RESET APPLIANCES LIST
+    def go_back():
+        for item in tree.get_children():
+            tree.delete(item)
+        insert_full_list()  
+
+    # BACK BUTTON
+    back_button = tk.Button(show_appliances_window, text="GO BACK", command=go_back, font=font_style, bg="salmon",borderwidth= 5, fg= 'gray17')
+    back_button.place(x=10, y=10)
+
+    # SCROLLBAR FOR TREEVIEW
+    scrollbar = ttk.Scrollbar(show_appliances_window, orient="vertical", command=tree.yview)
+    tree.configure(yscroll=scrollbar.set)
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+    # EXIT BUTTON
+    exit_button = tk.Button(show_appliances_window, text="EXIT", command=show_appliances_window.destroy, font=font_style, bg="maroon", borderwidth= 5, fg= 'azure')
+    exit_button.pack(pady=10)
+
+# MAIN WINDOW SETUP
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.config(bg='darkolivegreen1')
+    calculator = WattEaseMatters(root)
+    root.mainloop()  
