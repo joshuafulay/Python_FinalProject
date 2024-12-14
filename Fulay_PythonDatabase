@@ -1,0 +1,87 @@
+import mysql.connector
+from mysql.connector import Error
+
+class Database:
+    def __init__(self, host='localhost', database='watt_ease_matters_db', user='root', password=''):
+        try:
+            self.connection = mysql.connector.connect(
+                host=host,
+                database=database,
+                user=user,
+                password=password
+            )
+            if self.connection.is_connected():
+                print("Connected to MySQL database")
+        except Error as e:
+            print(f"Error: {e}")
+            self.connection = None
+
+    def create_user(self, username, password):
+        try:
+            cursor = self.connection.cursor()  
+            query = "INSERT INTO users (username, password) VALUES (%s, %s)"
+            cursor.execute(query, (username, password))  
+            self.connection.commit()  
+            cursor.close()  
+            return True  
+        except Error as e:
+            print(f"Error: {e}")
+            return False  
+
+    def get_user(self, username):
+        try:
+            cursor = self.connection.cursor()  
+            cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+            user_data = cursor.fetchone()  
+            cursor.close()  
+            return user_data
+        except Exception as e:
+            print(f"Error fetching user: {e}")
+            return None
+
+
+    def add_appliance(self, user_id, name, power_consumption, hours_of_use_per_day, hours_of_use_per_month, cost_per_kwh):
+        try:
+            cursor = self.connection.cursor()  
+        # PREPARE THE SQL QUERY
+            query = """
+            INSERT INTO appliances (user_id, name, power_consumption, hours_of_use_per_day, hours_of_use_per_month, cost_per_kwh)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(query, (user_id, name, power_consumption, hours_of_use_per_day, hours_of_use_per_month, cost_per_kwh))
+            self.connection.commit()  
+            cursor.close()  
+        except Exception as e:
+            print(f"Error adding appliance to the database: {e}")
+
+
+    def get_appliances(self, user_id):
+        try:
+            cursor = self.connection.cursor()  
+            cursor.execute("SELECT * FROM appliances WHERE user_id = %s", (user_id,))
+            rows = cursor.fetchall()
+        
+            appliances = []
+            for row in rows:
+                appliance = {
+                'id': row[0],  
+                'user_id': row[1],
+                'name': row[2],
+                'power_consumption': row[3],
+                'hours_of_use_per_day': row[4],
+                'hours_of_use_per_month': row[5],
+                'cost_per_kwh': row[6]
+                }
+                appliances.append(appliance)  
+        
+            cursor.close()  
+            return appliances
+        except Error as e:
+            print(f"Error: {e}")
+            return [] 
+
+
+    def close(self):
+        if self.connection and self.connection.is_connected():
+            self.connection.close()
+            print("MySQL connection is closed")
